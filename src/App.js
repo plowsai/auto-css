@@ -42,7 +42,7 @@ function App() {
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          style={{ width: '300px', height: '200px', border: '2px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: '300px', height: '200px', border: '2px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'black' }}
         >
           {file ? <p>{file.name}</p> : <p>Drag and drop a file here</p>}
         </div>

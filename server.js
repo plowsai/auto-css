@@ -22,6 +22,11 @@ app.post('/upload', upload.single('file'), (req, res) => {
   res.send('File uploaded successfully');
 });
 
+// Route to handle GET requests to the root URL
+app.get('/', (req, res) => {
+  res.send('Welcome to the Drag and Drop App');
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 }); 
