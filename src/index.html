@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto CSS - Mobile Friendly CSS Generator</title>
+    <link rel="stylesheet" href="App.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #000;
+            color: white;
+        }
+        .App {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .file-upload label {
+            padding: 10px 15px;
+            background-color: #4a4a4a;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+        .file-upload label:hover {
+            background-color: #666;
+        }
+        .file-upload input[type="file"] {
+            display: none;
+        }
+        .file-name {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .center-input {
+            width: 80%;
+            max-width: 600px;
+            padding: 15px 20px;
+            font-size: 18px;
+            border-radius: 25px;
+            border: 2px solid #4a4a4a;
+            background-color: #2a2a2a;
+            color: white;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .center-input:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .input-container {
+            width: 80%;
+            max-width: 600px;
+            padding: 15px 20px;
+            border-radius: 25px;
+            border: 2px solid #4a4a4a;
+            background-color: #2a2a2a;
+            color: white;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        .input-container:focus-within {
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .text-input {
+            width: 100%;
+            font-size: 18px;
+            background-color: transparent;
+            color: white;
+            border: none;
+            margin-bottom: 15px;
+        }
+        .text-input:focus {
+            outline: none;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 50px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+            color: #aaa;
+        }
+        
+        .input-box {
+            width: 100%;
+            background-color: #333;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .prompt-input {
+            width: 100%;
+            padding: 15px 5px;
+            font-size: 18px;
+            background-color: transparent;
+            border: none;
+            color: white;
+            border-bottom: 1px solid #555;
+            margin-bottom: 15px;
+        }
+        
+        .prompt-input:focus {
+            outline: none;
+            border-bottom-color: #6366f1;
+        }
+        
+        .actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .action-button {
+            background: none;
+            border: none;
+            color: #aaa;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 6px;
+        }
+        
+        .action-button:hover {
+            background-color: #444;
+            color: white;
+        }
+        
+        .spacer {
+            flex-grow: 1;
+        }
+        
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        .chip {
+            background-color: #222;
+            border: 1px solid #444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .chip:hover {
+            background-color: #333;
+            border-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <div class="app-container">
+        <div class="header">
+            <h1>Auto CSS - Mobile Friendly CSS Generator</h1>
+            <p>Transform your ideas into responsive designs in seconds</p>
+        </div>
+        
+        <div class="input-box">
+            <input type="text" class="prompt-input" placeholder="Ask Auto CSS to create a...">
+            
+            <div class="actions">
+                <button class="action-button">
+                    <span class="icon">📎</span>
+                    Attach
+                </button>
+                <button class="action-button">
+                    <span class="icon">📥</span>
+                    Import
+                </button>
+                <div class="spacer"></div>
+                <button class="action-button">
+                    <span class="icon">🌐</span>
+                    Public
+                </button>
+            </div>
+        </div>
+        
+        <div class="suggestion-chips">
+            <button class="chip">Weather dashboard</button>
+            <button class="chip">Social media feed</button>
+            <button class="chip">Personal website</button>
+            <button class="chip">E-commerce store</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
+            document.getElementById('file-name').textContent = fileName;
+        });
+    </script>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel" src="App.js"></script>
+    <script type="text/babel">
+        ReactDOM.render(
+            <App />,
+            document.getElementById('root')
+        );
+    </script>
+</body>
+</html> 
