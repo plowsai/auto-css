@@ -35,16 +35,31 @@ function App() {
     event.preventDefault();
   };
 
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    setFile(selectedFile);
+    uploadFile(selectedFile);
+  };
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Drag and Drop App</h1>
+        <img src="/path/to/logo.png" alt="Logo" className="App-logo" />
+        <h1>Idea to app in seconds.</h1>
+        <p>Lovable is your superhuman full stack engineer.</p>
         <div
+          className="drop-area"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
-          style={{ width: '300px', height: '200px', border: '2px dashed #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'black' }}
         >
           {file ? <p>{file.name}</p> : <p>Drag and drop a file here</p>}
+        </div>
+        <input type="file" onChange={handleFileChange} />
+        <div className="button-group">
+          <button>Job board</button>
+          <button>Weather dashboard</button>
+          <button>Expense tracker</button>
+          <button>Markdown editor</button>
         </div>
       </header>
     </div>
