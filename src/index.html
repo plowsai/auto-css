@@ -209,14 +209,15 @@
         </div>
         
         <div class="input-box">
-            <input type="text" class="prompt-input" placeholder="Ask Auto CSS to create a...">
+            <input type="text" class="prompt-input" id="prompt-input" placeholder="Ask Auto CSS to create a...">
             
             <div class="actions">
-                <button class="action-button">
+                <button class="action-button" id="attach-button">
                     <span class="icon">📎</span>
                     Attach
                 </button>
-                <button class="action-button">
+                <input type="file" id="file-input" style="display: none">
+                <!-- <button class="action-button" id="import-button">
                     <span class="icon">📥</span>
                     Import
                 </button>
@@ -224,23 +225,133 @@
                 <button class="action-button">
                     <span class="icon">🌐</span>
                     Public
-                </button>
+                </button> -->
             </div>
         </div>
         
-        <div class="suggestion-chips">
+        <!-- New file display and code generation area -->
+        <div id="upload-result" style="display: none; margin-top: 30px; width: 100%">
+            <div class="file-info" style="background-color: #333; border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                <h3 id="file-name-display">Filename</h3>
+                <p id="file-details">Details</p>
+            </div>
+            
+            <div class="generated-code" style="background-color: #222; border-radius: 12px; padding: 20px; overflow: auto;">
+                <h3>Generated Code</h3>
+                <pre id="code-output" style="color: #ddd; font-family: monospace; white-space: pre-wrap;"></pre>
+            </div>
+        </div>
+        
+        <!-- <div class="suggestion-chips">
             <button class="chip">Weather dashboard</button>
             <button class="chip">Social media feed</button>
             <button class="chip">Personal website</button>
             <button class="chip">E-commerce store</button>
-        </div>
+        </div> -->
     </div>
 
     <script>
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'No file selected';
-            document.getElementById('file-name').textContent = fileName;
+        // File upload handling
+        document.getElementById('attach-button').addEventListener('click', function() {
+            document.getElementById('file-input').click();
         });
+        
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        });
+        
+        document.getElementById('import-button').addEventListener('click', function() {
+            document.getElementById('file-input').click();
+        });
+        
+        // Handle drag and drop
+        const appContainer = document.querySelector('.app-container');
+        
+        appContainer.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.backgroundColor = '#222';
+        });
+        
+        appContainer.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.backgroundColor = '';
+        });
+        
+        appContainer.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.style.backgroundColor = '';
+            
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                uploadFile(file);
+            }
+        });
+        
+        // Upload file to server
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display file info and generated code
+                document.getElementById('upload-result').style.display = 'block';
+                document.getElementById('file-name-display').textContent = data.file.name;
+                document.getElementById('file-details').textContent = `Size: ${formatFileSize(data.file.size)} | Type: ${data.file.type}`;
+                
+                // Generate placeholder code (in a real app, this would come from your backend)
+                generateSampleCode(data.file);
+            })
+            .catch(error => {
+                console.error('Error uploading file:', error);
+                alert('Error uploading file. Please try again.');
+            });
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+        
+        function generateSampleCode(fileInfo) {
+            // This is a placeholder - in a real app, your backend would generate this code
+            // based on the file content analysis
+            const sampleCode = `// Auto-generated code for ${fileInfo.name}
+import React from 'react';
+
+function FileViewer() {
+  return (
+    <div className="file-viewer">
+      <h2>File Content Analysis</h2>
+      <div className="file-preview">
+        <a href="${fileInfo.path}" target="_blank">View Original File</a>
+        <p>File processed successfully!</p>
+        
+        {/* Generated code would appear here based on file content */}
+        <div className="generated-component">
+          <h3>Responsive Component</h3>
+          {/* Your auto-generated code would be here */}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default FileViewer;`;
+            
+            document.getElementById('code-output').textContent = sampleCode;
+        }
     </script>
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
