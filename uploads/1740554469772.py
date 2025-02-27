@@ -5,7 +5,14 @@ import random
 app = Flask(__name__)
 
 # Configure OpenAI
-openai.api_key = 'your-api-key-here'  # Replace with your actual API key
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get API key from environment variables
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 # Define AI agents with their personalities
 AI_AGENTS = {
