@@ -58,8 +58,8 @@ button:hover {
 .app-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-  font-family: 'Arial', sans-serif;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 header {
@@ -166,4 +166,757 @@ button:hover {
 .copy-button {
   padding: 4px 8px;
   font-size: 12px;
+}
+
+/* App Container */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Header */
+.app-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-header p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 2rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background-color: #f5f5f5;
+}
+
+.tab.active {
+  border-bottom-color: #6366f1;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+/* Main Content */
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Input Section */
+.input-section h2 {
+  margin-bottom: 1rem;
+}
+
+.prompt-input-container {
+  margin-bottom: 1.5rem;
+}
+
+.input-group {
+  margin-bottom: 1rem;
+}
+
+.input-with-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-textarea {
+  width: 100%;
+  padding: 1.5rem;
+  padding-bottom: 4rem; /* Make space for the button */
+  font-size: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid #333;
+  background-color: #222;
+  color: white;
+  resize: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  min-height: 120px;
+}
+
+.prompt-textarea:focus {
+  outline: none;
+  border-color: #444;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.prompt-textarea::placeholder {
+  color: #888;
+}
+
+.input-with-button .generate-button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 0.75rem 1.5rem;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 2;
+  pointer-events: auto; /* Ensure the button can be clicked */
+}
+
+.input-with-button .generate-button:hover {
+  background-color: #4f46e5;
+}
+
+.input-with-button .generate-button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.upload-button {
+  background-color: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-button:hover {
+  background-color: #444;
+}
+
+/* Output Section */
+.output-section h2 {
+  margin-bottom: 1rem;
+}
+
+.code-editor-container {
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.code-editor-header {
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+}
+
+.language-badge {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.code-editor {
+  width: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: none;
+  resize: vertical;
+}
+
+.copy-button-container {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copy-button {
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background-color: #e5e5e5;
+}
+
+/* History Section */
+.history-section h2 {
+  margin-bottom: 1.5rem;
+}
+
+.no-history {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history-item {
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.history-prompt {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.history-use-button {
+  padding: 0.5rem 1rem;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-use-button:hover {
+  background-color: #e5e5e5;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 1rem;
+  }
+  
+  .app-header h1 {
+    font-size: 2rem;
+  }
+  
+  .tab {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Dark theme overrides */
+body {
+  background-color: #000;
+  color: white;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 50px auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: white;
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.app-header h1 {
+  font-size: 4.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.app-header p {
+  font-size: 1.5rem;
+  color: #aaa;
+}
+
+/* Input styling to match the image */
+.input-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.input-section h2 {
+  display: none;
+}
+
+.prompt-input-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.input-with-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-textarea {
+  width: 100%;
+  padding: 1.5rem;
+  padding-bottom: 4rem; /* Make space for the button */
+  font-size: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid #333;
+  background-color: #222;
+  color: white;
+  resize: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  min-height: 120px;
+}
+
+.prompt-textarea:focus {
+  outline: none;
+  border-color: #444;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.prompt-textarea::placeholder {
+  color: #888;
+}
+
+.input-with-button .generate-button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 0.75rem 1.5rem;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 2;
+  pointer-events: auto; /* Ensure the button can be clicked */
+}
+
+.input-with-button .generate-button:hover {
+  background-color: #4f46e5;
+}
+
+.input-with-button .generate-button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  background: none;
+  border: none;
+  color: #aaa;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  border-radius: 6px;
+}
+
+.action-button:hover {
+  background-color: #333;
+  color: white;
+}
+
+.generate-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.generate-button:hover {
+  background-color: #4f46e5;
+}
+
+.generate-button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #333;
+  margin-bottom: 2rem;
+}
+
+.tab {
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  color: #aaa;
+}
+
+.tab:hover {
+  background-color: #222;
+  color: white;
+}
+
+.tab.active {
+  border-bottom-color: #6366f1;
+  color: white;
+  font-weight: 600;
+}
+
+/* Output section dark theme */
+.output-section {
+  border: 1px solid #333;
+  background-color: #111;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+.code-editor-container {
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.code-editor-header {
+  padding: 0.75rem 1rem;
+  background-color: #222;
+  border-bottom: 1px solid #333;
+}
+
+.language-badge {
+  font-size: 0.875rem;
+  color: #aaa;
+}
+
+.code-editor {
+  width: 100%;
+  min-height: 300px;
+  padding: 1rem;
+  font-family: monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: none;
+  resize: vertical;
+  background-color: #1a1a1a;
+  color: #eee;
+}
+
+.copy-button {
+  padding: 0.5rem 1rem;
+  background-color: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 0.25rem;
+}
+
+.copy-button:hover {
+  background-color: #444;
+}
+
+/* History section dark theme */
+.history-section {
+  border: 1px solid #333;
+  background-color: #111;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.history-item {
+  border: 1px solid #333;
+  background-color: #222;
+  border-radius: 8px;
+}
+
+.history-prompt {
+  color: white;
+}
+
+.history-meta {
+  color: #888;
+}
+
+.history-use-button {
+  background-color: #333;
+  color: white;
+  border: 1px solid #444;
+}
+
+.history-use-button:hover {
+  background-color: #444;
+}
+
+/* Content layout */
+.content-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.content-layout.with-output {
+  flex-direction: row;
+  gap: 2rem;
+}
+
+.content-layout.with-output .input-section {
+  flex: 1;
+  max-width: 40%;
+}
+
+.content-layout.with-output .output-section {
+  flex: 2;
+  max-width: 60%;
+}
+
+/* Input styling */
+.input-with-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-textarea {
+  width: 100%;
+  padding: 1.5rem;
+  padding-bottom: 4rem; /* Make space for the buttons */
+  font-size: 1.25rem;
+  border-radius: 12px;
+  border: 2px solid #333;
+  background-color: #222;
+  color: white;
+  resize: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  min-height: 120px;
+}
+
+.prompt-textarea:focus {
+  outline: none;
+  border-color: #444;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.prompt-textarea::placeholder {
+  color: #888;
+}
+
+.upload-button-inside {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background-color: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.upload-button-inside:hover {
+  background-color: #444;
+}
+
+.input-with-button .generate-button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  padding: 0.75rem 1.5rem;
+  background-color: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  z-index: 2;
+  pointer-events: auto; /* Ensure the button can be clicked */
+}
+
+.input-with-button .generate-button:hover {
+  background-color: #4f46e5;
+}
+
+.input-with-button .generate-button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+}
+
+/* Output section */
+.output-section {
+  border: 1px solid #333;
+  background-color: #111;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .content-layout.with-output {
+    flex-direction: column;
+  }
+  
+  .content-layout.with-output .input-section,
+  .content-layout.with-output .output-section {
+    max-width: 100%;
+  }
+  
+  .content-layout.with-output .output-section {
+    margin-top: 2rem;
+  }
+}
+
+/* Upload folder button */
+.upload-folder-button {
+  position: absolute;
+  bottom: 12px;
+  left: 120px; /* Position after the upload file button */
+  background-color: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.upload-folder-button:hover {
+  background-color: #444;
+}
+
+/* Action buttons container */
+.action-buttons-container {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+/* Download button */
+.download-button {
+  padding: 0.5rem 1rem;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.download-button:hover {
+  background-color: #4338ca;
+}
+
+.download-button:before {
+  content: "↓";
+  font-weight: bold;
+}
+
+/* History actions */
+.history-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.history-download-button {
+  padding: 0.5rem 1rem;
+  background-color: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-download-button:hover {
+  background-color: #4338ca;
 } 

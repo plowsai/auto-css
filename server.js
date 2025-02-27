@@ -5,6 +5,7 @@ const { OpenAI } = require('openai');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
+const archiver = require('archiver');
 
 // Load environment variables
 dotenv.config();
@@ -18,6 +19,12 @@ app.use(express.json());
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir);
+}
+
+// Create output directory for generated projects
+const outputDir = path.join(__dirname, 'output');
+if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir);
 }
 
 // Set up storage for Multer
@@ -36,8 +43,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Serve static files from src directory
-app.use(express.static(path.join(__dirname, 'src')));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/output', express.static(path.join(__dirname, 'output')));
 
 // Endpoint to handle file upload
 app.post('/upload', upload.single('file'), (req, res) => {
@@ -56,10 +65,45 @@ app.post('/upload', upload.single('file'), (req, res) => {
     });
 });
 
+// Endpoint to handle folder upload
+app.post('/upload-folder', upload.array('files'), (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+    }
+    
+    // Create a project ID for this upload
+    const projectId = Date.now().toString();
+    const projectDir = path.join(uploadsDir, projectId);
+    
+    // Create project directory
+    if (!fs.existsSync(projectDir)) {
+        fs.mkdirSync(projectDir);
+    }
+    
+    // Move files to project directory
+    const fileInfos = req.files.map(file => {
+        const newPath = path.join(projectDir, file.originalname);
+        fs.renameSync(file.path, newPath);
+        
+        return {
+            name: file.originalname,
+            size: file.size,
+            type: file.mimetype,
+            path: `/uploads/${projectId}/${file.originalname}`
+        };
+    });
+    
+    // Return project information
+    res.json({
+        projectId,
+        files: fileInfos
+    });
+});
+
 // Code generation endpoint
 app.post('/api/generate', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, projectId } = req.body;
     
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
@@ -94,16 +138,105 @@ app.post('/api/generate', async (req, res) => {
       code = match[2].trim();
     }
     
-    res.json({ code, language });
+    // Generate a unique ID for this generation
+    const generationId = Date.now().toString();
+    const outputPath = path.join(outputDir, generationId);
+    
+    // Create output directory
+    if (!fs.existsSync(outputPath)) {
+        fs.mkdirSync(outputPath);
+    }
+    
+    // Save the generated code to a file
+    const filename = `generated.${language === 'css' ? 'css' : language === 'html' ? 'html' : 'js'}`;
+    fs.writeFileSync(path.join(outputPath, filename), code);
+    
+    // If projectId is provided, copy uploaded files to output directory
+    if (projectId) {
+        const projectPath = path.join(uploadsDir, projectId);
+        if (fs.existsSync(projectPath)) {
+            // Copy project files to output directory
+            const files = fs.readdirSync(projectPath);
+            files.forEach(file => {
+                const srcPath = path.join(projectPath, file);
+                const destPath = path.join(outputPath, file);
+                fs.copyFileSync(srcPath, destPath);
+            });
+        }
+    }
+    
+    res.json({ 
+        code, 
+        language,
+        generationId,
+        downloadUrl: `/download/${generationId}`
+    });
   } catch (error) {
     console.error('Error generating code:', error);
     res.status(500).json({ error: 'Failed to generate code' });
   }
 });
 
+// Endpoint to download generated project
+app.get('/download/:generationId', (req, res) => {
+    const { generationId } = req.params;
+    const outputPath = path.join(outputDir, generationId);
+    
+    // Check if the generation exists
+    if (!fs.existsSync(outputPath)) {
+        return res.status(404).json({ error: 'Generated project not found' });
+    }
+    
+    // Create a zip file
+    const zipFilename = `autocss-project-${generationId}.zip`;
+    const zipPath = path.join(outputDir, zipFilename);
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', {
+        zlib: { level: 9 } // Maximum compression
+    });
+    
+    // Listen for all archive data to be written
+    output.on('close', function() {
+        console.log(`Archive created: ${archive.pointer()} total bytes`);
+        // Send the zip file
+        res.download(zipPath, zipFilename, (err) => {
+            if (err) {
+                console.error('Error sending zip file:', err);
+            }
+            // Delete the zip file after sending
+            fs.unlinkSync(zipPath);
+        });
+    });
+    
+    // Handle archive warnings
+    archive.on('warning', function(err) {
+        if (err.code === 'ENOENT') {
+            console.warn('Archive warning:', err);
+        } else {
+            console.error('Archive error:', err);
+            res.status(500).json({ error: 'Failed to create archive' });
+        }
+    });
+    
+    // Handle archive errors
+    archive.on('error', function(err) {
+        console.error('Archive error:', err);
+        res.status(500).json({ error: 'Failed to create archive' });
+    });
+    
+    // Pipe archive data to the file
+    archive.pipe(output);
+    
+    // Add files from the output directory
+    archive.directory(outputPath, false);
+    
+    // Finalize the archive
+    archive.finalize();
+});
+
 // Serve index.html for the root route
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'src', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Start the server
