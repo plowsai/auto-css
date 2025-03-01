@@ -176,6 +176,8 @@ const App = () => {
   const [projectId, setProjectId] = React.useState(null);
   const [downloadUrl, setDownloadUrl] = React.useState(null);
   const [showPreview, setShowPreview] = React.useState(false);
+  const [githubUrl, setGithubUrl] = React.useState('');
+  const [inputMode, setInputMode] = React.useState('generate'); // 'generate', 'upload', or 'github'
   const [history, setHistory] = React.useState(() => {
     try {
       const savedHistory = localStorage.getItem('autocss-history');
@@ -370,6 +372,227 @@ const App = () => {
     setShowPreview(!showPreview);
   };
 
+  // Handle GitHub URL input change
+  const handleGithubUrlChange = (e) => {
+    setGithubUrl(e.target.value);
+  };
+
+  // Toggle between different input modes
+  const setMode = (mode) => {
+    setInputMode(mode);
+    setError(null);
+  };
+
+  // Process GitHub repository
+  const processGithubRepo = async () => {
+    if (!githubUrl.trim()) {
+      setError('Please enter a GitHub URL');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/process-github', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ githubUrl }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process GitHub repository');
+      }
+      
+      const data = await response.json();
+      console.log('GitHub repository processed:', data);
+      setProjectId(data.projectId);
+      
+      // Show success message
+      alert('GitHub repository processed successfully! You can now generate CSS for it.');
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error processing GitHub repository:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Generate CSS for GitHub repository
+  const generateGithubCss = async () => {
+    if (!projectId) {
+      setError('No GitHub repository processed. Please enter a GitHub URL first.');
+      return;
+    }
+    
+    if (!prompt.trim()) {
+      setError('Please enter a prompt describing the CSS you want to generate.');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/generate-github-css', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          projectId,
+          prompt 
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate CSS for GitHub repository');
+      }
+      
+      const data = await response.json();
+      console.log('CSS generated for GitHub repository:', data);
+      
+      setGeneratedCode(data.css);
+      setLanguage('css');
+      setDownloadUrl(data.downloadUrl);
+      
+      // Add to history
+      const newEntry = {
+        id: Date.now(),
+        prompt,
+        code: data.css,
+        language: 'css',
+        timestamp: new Date().toISOString(),
+        isGithub: true,
+        githubUrl
+      };
+      
+      const updatedHistory = [newEntry, ...history.slice(0, 9)];
+      setHistory(updatedHistory);
+      localStorage.setItem('autocss-history', JSON.stringify(updatedHistory));
+      
+      // Show preview
+      setShowPreview(true);
+      
+    } catch (err) {
+      setError(err.message);
+      console.error('Error generating CSS for GitHub repository:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Render the input section with three modes: Generate, Upload, and GitHub
+  const renderInputSection = () => {
+    return React.createElement('section', { className: 'input-section' },
+      React.createElement('h2', null, 'Describe what you want'),
+      
+      // Mode toggle buttons
+      React.createElement('div', { className: 'mode-toggle' },
+        React.createElement('button', {
+          className: `mode-button ${inputMode === 'generate' ? 'active' : ''}`,
+          onClick: () => setMode('generate')
+        }, 'Generate'),
+        React.createElement('button', {
+          className: `mode-button ${inputMode === 'upload' ? 'active' : ''}`,
+          onClick: () => setMode('upload')
+        }, 'Upload'),
+        React.createElement('button', {
+          className: `mode-button ${inputMode === 'github' ? 'active' : ''}`,
+          onClick: () => setMode('github')
+        }, 'GitHub')
+      ),
+      
+      // Input based on selected mode
+      inputMode === 'github' ? 
+        // GitHub URL input
+        React.createElement('div', { className: 'github-input-container' },
+          React.createElement('input', {
+            type: 'text',
+            className: 'github-url-input',
+            value: githubUrl,
+            onChange: handleGithubUrlChange,
+            placeholder: 'Enter GitHub repository URL (e.g., https://github.com/username/repo)',
+            disabled: isLoading
+          }),
+          React.createElement('button', {
+            className: 'github-process-button',
+            onClick: processGithubRepo,
+            disabled: isLoading || !githubUrl.trim()
+          }, isLoading ? 'Processing...' : 'Process Repository'),
+          
+          // Add prompt textarea for GitHub mode
+          React.createElement('div', { className: 'input-with-button', style: { marginTop: '20px' } },
+            React.createElement('textarea', {
+              className: 'prompt-textarea',
+              value: prompt,
+              onChange: (e) => setPrompt(e.target.value),
+              placeholder: 'Describe the CSS you want to generate for this GitHub repository...',
+              disabled: isLoading || !projectId
+            }),
+            React.createElement('button', {
+              className: 'generate-button',
+              onClick: generateGithubCss,
+              disabled: isLoading || !prompt.trim() || !projectId
+            }, isLoading ? 'Generating...' : 'Generate CSS')
+          )
+        )
+      : inputMode === 'upload' ?
+        // File upload
+        React.createElement('div', { className: 'input-with-button' },
+          React.createElement('textarea', {
+            className: 'prompt-textarea',
+            value: prompt,
+            onChange: (e) => setPrompt(e.target.value),
+            placeholder: isLoading ? 'Uploading...' : 'Upload a project to generate CSS...',
+            disabled: isLoading
+          }),
+          React.createElement('button', {
+            className: 'upload-button-inside',
+            onClick: handleAttachClick,
+            disabled: isLoading
+          }, 'Upload File'),
+          React.createElement('button', {
+            className: 'upload-folder-button',
+            onClick: handleFolderClick,
+            disabled: isLoading
+          }, 'Upload Folder'),
+          selectedFile && React.createElement('div', { className: 'selected-file' }, 
+            `Selected: ${selectedFile.name}`
+          ),
+          React.createElement('button', {
+            className: 'generate-button',
+            onClick: generateCode,
+            disabled: isLoading || !prompt.trim() || !selectedFile
+          }, isLoading ? 'Generating...' : 'Generate CSS')
+        )
+      :
+        // Generate mode (text prompt only)
+        React.createElement('div', { className: 'input-with-button' },
+          React.createElement('textarea', {
+            className: 'prompt-textarea',
+            value: prompt,
+            onChange: (e) => setPrompt(e.target.value),
+            placeholder: isLoading ? 'Generating...' : 'Describe the CSS you want to generate...',
+            disabled: isLoading
+          }),
+          React.createElement('button', {
+            className: 'generate-button',
+            onClick: generateCode,
+            disabled: isLoading || !prompt.trim()
+          }, isLoading ? 'Generating...' : 'Generate CSS')
+        ),
+      
+      // Error message
+      error && React.createElement('div', { className: 'error-message' }, error)
+    );
+  };
+
   return React.createElement('div', { className: 'app-container' },
     // Header
     React.createElement('header', { className: 'app-header' },
@@ -377,85 +600,54 @@ const App = () => {
       React.createElement('p', null, 'AutoCSS is your magical CSS generator.')
     ),
     
+    // Hidden file inputs
+    React.createElement('input', {
+      type: 'file',
+      ref: fileInputRef,
+      style: { display: 'none' },
+      onChange: handleFileChange,
+      accept: '.html,.css,.js'
+    }),
+    React.createElement('input', {
+      type: 'file',
+      ref: folderInputRef,
+      style: { display: 'none' },
+      onChange: handleFolderChange,
+      webkitdirectory: '',
+      directory: '',
+      multiple: true
+    }),
+    
     // Tabs
     React.createElement('div', { className: 'tabs' },
       React.createElement('button', { 
-        className: `tab ${activeTab === 'generate' ? 'active' : ''}`,
-        onClick: () => setActiveTab('generate')
+        className: `tab ${inputMode === 'generate' ? 'active' : ''}`,
+        onClick: () => setMode('generate')
       }, 'Generate'),
       React.createElement('button', { 
-        className: `tab ${activeTab === 'history' ? 'active' : ''}`,
-        onClick: () => setActiveTab('history')
+        className: `tab ${inputMode === 'upload' ? 'active' : ''}`,
+        onClick: () => setMode('upload')
+      }, 'Upload'),
+      React.createElement('button', { 
+        className: `tab ${inputMode === 'github' ? 'active' : ''}`,
+        onClick: () => setMode('github')
+      }, 'GitHub'),
+      React.createElement('button', { 
+        className: `tab ${inputMode === 'history' ? 'active' : ''}`,
+        onClick: () => setMode('history')
       }, 'History')
     ),
     
     // Main content
     React.createElement('main', { className: 'app-main' },
-      activeTab === 'generate' ? 
+      inputMode === 'generate' || inputMode === 'upload' || inputMode === 'github' ? 
         // Generate tab
         React.createElement('div', { 
-          className: `content-layout ${generatedCode ? 'with-output' : ''}` 
+          className: `content-layout ${generatedCode ? 'with-output' : ''}`
         },
-          // Input section
-          React.createElement('section', { className: 'input-section' },
-            React.createElement('h2', null, 'Describe what you want'),
-            React.createElement('div', { className: 'prompt-input-container' },
-              React.createElement('form', { 
-                onSubmit: (e) => {
-                  e.preventDefault();
-                  generateCode();
-                }
-              },
-                React.createElement('div', { className: 'input-group' },
-                  React.createElement('div', { className: 'input-with-button' },
-                    React.createElement('textarea', {
-                      className: 'prompt-textarea',
-                      value: prompt,
-                      onChange: (e) => setPrompt(e.target.value),
-                      placeholder: 'Upload a project to Auto CSS',
-                      rows: 4,
-                      disabled: isLoading
-                    }),
-                    React.createElement('button', {
-                      type: 'button',
-                      className: 'upload-button-inside',
-                      onClick: handleAttachClick
-                    }, 'Upload File'),
-                    React.createElement('input', {
-                      ref: fileInputRef,
-                      type: 'file',
-                      style: { display: 'none' },
-                      onChange: handleFileChange
-                    }),
-                    // Add folder input
-                    React.createElement('button', {
-                      type: 'button',
-                      className: 'upload-folder-button',
-                      onClick: handleFolderClick
-                    }, 'Upload Folder'),
-                    React.createElement('input', {
-                      ref: folderInputRef,
-                      type: 'file',
-                      webkitdirectory: "", // This attribute enables folder selection
-                      directory: "", // Non-standard attribute for Firefox
-                      multiple: true,
-                      style: { display: 'none' },
-                      onChange: handleFolderChange
-                    }),
-                    React.createElement('button', {
-                      type: 'submit',
-                      className: 'generate-button',
-                      disabled: isLoading || !prompt.trim()
-                    }, isLoading ? 'Generating...' : 'Generate')
-                  )
-                )
-              )
-            ),
-            error && React.createElement('div', { className: 'error-message' }, error)
-          ),
-          
-          // Output section (always show if there's generated code)
+          renderInputSection(),
           generatedCode && React.createElement('section', { className: 'output-section' },
+            // Output tabs
             React.createElement('div', { className: 'output-tabs' },
               React.createElement('button', {
                 className: `output-tab ${!showPreview ? 'active' : ''}`,
@@ -463,45 +655,29 @@ const App = () => {
               }, 'Code'),
               React.createElement('button', {
                 className: `output-tab ${showPreview ? 'active' : ''}`,
-                onClick: () => setShowPreview(true)
+                onClick: togglePreview
               }, 'Preview')
             ),
-            !showPreview ? (
-              // Code view
-              React.createElement(React.Fragment, null,
-                React.createElement('h2', null, 'Generated CSS'),
-                React.createElement('div', { className: 'code-editor-container' },
-                  React.createElement('div', { className: 'code-editor-header' },
-                    React.createElement('span', { className: 'language-badge' }, language || 'css')
-                  ),
-                  React.createElement('textarea', {
-                    className: 'code-editor',
-                    value: generatedCode,
-                    readOnly: true,
-                    spellCheck: 'false',
-                    'aria-label': 'Code editor'
-                  })
-                ),
-                React.createElement('div', { className: 'action-buttons-container' },
-                  React.createElement('button', {
-                    className: 'copy-button',
-                    onClick: copyToClipboard
-                  }, 'Copy to Clipboard'),
-                  downloadUrl && React.createElement('button', {
-                    className: 'download-button',
-                    onClick: downloadProject
-                  }, 'Download Project')
+            
+            // Show either code or preview based on tab
+            showPreview
+              ? React.createElement(PreviewPanel, { generatedCode, projectId })
+              : React.createElement('div', { className: 'code-container' },
+                  React.createElement('pre', { className: 'code-block' }, generatedCode),
+                  React.createElement('div', { className: 'action-buttons-container' },
+                    React.createElement('button', {
+                      className: 'copy-button',
+                      onClick: copyToClipboard
+                    }, 'Copy to Clipboard'),
+                    projectId && React.createElement('button', {
+                      className: 'download-button',
+                      onClick: downloadProject
+                    }, 'Download Project')
+                  )
                 )
-              )
-            ) : (
-              // Preview view
-              React.createElement(PreviewPanel, {
-                generatedCode: generatedCode,
-                projectId: projectId
-              })
-            )
           )
-        ) :
+        )
+      : inputMode === 'history' ?
         // History tab
         React.createElement('section', { className: 'history-section' },
           React.createElement('h2', null, 'Generation History'),
@@ -510,6 +686,10 @@ const App = () => {
             React.createElement('ul', { className: 'history-list' },
               history.map(item => 
                 React.createElement('li', { key: item.id, className: 'history-item' },
+                  item.isGithub && React.createElement('div', { className: 'history-github-url' }, 
+                    React.createElement('strong', null, 'GitHub: '), 
+                    item.githubUrl
+                  ),
                   React.createElement('div', { className: 'history-prompt' }, item.prompt),
                   React.createElement('div', { className: 'history-meta' },
                     React.createElement('span', { className: 'history-language' }, item.language),

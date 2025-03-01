@@ -1027,17 +1027,20 @@ body {
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .mode-button {
-  padding: 10px 20px;
   background-color: #333;
   color: #ccc;
   border: 1px solid #444;
-  border-radius: 4px;
+  padding: 10px 20px;
   margin: 0 5px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
+  flex: 1;
+  max-width: 150px;
 }
 
 .mode-button:hover {
@@ -1046,15 +1049,15 @@ body {
 }
 
 .mode-button.active {
-  background-color: #007bff;
+  background-color: #0078d7;
   color: white;
-  border-color: #0069d9;
+  border-color: #0078d7;
 }
 
 .github-input-container {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
   margin-bottom: 20px;
   width: 100%;
 }
@@ -1105,8 +1108,14 @@ body {
 .history-github-url {
   font-size: 14px;
   color: #007bff;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   word-break: break-all;
+}
+
+.selected-file {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #28a745;
 }
 
 /* Adjust existing styles for better compatibility */
