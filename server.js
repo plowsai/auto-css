@@ -11,6 +11,9 @@ const readdir = promisify(fs.readdir);
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
+const { exec } = require('child_process');
+const execPromise = promisify(exec);
+const axios = require('axios');
 
 // Load environment variables
 dotenv.config();
@@ -30,6 +33,12 @@ if (!fs.existsSync(uploadsDir)) {
 const outputDir = path.join(__dirname, 'output');
 if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir);
+}
+
+// Create temp directory for GitHub repos
+const githubDir = path.join(__dirname, 'github_repos');
+if (!fs.existsSync(githubDir)) {
+    fs.mkdirSync(githubDir);
 }
 
 // Initialize OpenAI client
@@ -548,6 +557,259 @@ app.post('/api/preview-html', (req, res) => {
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
+// GitHub URL processing endpoint
+app.post('/api/process-github', async (req, res) => {
+  try {
+    const { githubUrl } = req.body;
+    
+    if (!githubUrl) {
+      return res.status(400).json({ error: 'GitHub URL is required' });
+    }
+    
+    // Validate GitHub URL format
+    const githubRegex = /^https?:\/\/github\.com\/([^\/]+)\/([^\/]+)(\/tree\/([^\/]+)(\/(.+))?)?$/;
+    const match = githubUrl.match(githubRegex);
+    
+    if (!match) {
+      return res.status(400).json({ error: 'Invalid GitHub URL format' });
+    }
+    
+    const [, owner, repo, , branch = 'main', , subdir = ''] = match;
+    
+    // Create a unique project ID
+    const projectId = Date.now().toString();
+    const projectDir = path.join(githubDir, projectId);
+    
+    // Create project directory
+    await mkdir(projectDir, { recursive: true });
+    
+    // Clone the repository or download files
+    try {
+      if (subdir) {
+        // If a subdirectory is specified, download files from the GitHub API
+        await downloadGitHubDirectory(owner, repo, branch, subdir, projectDir);
+      } else {
+        // Clone the entire repository
+        await execPromise(`git clone --depth 1 --branch ${branch} https://github.com/${owner}/${repo}.git ${projectDir}`);
+      }
+    } catch (error) {
+      console.error('Error fetching GitHub repository:', error);
+      return res.status(500).json({ error: 'Failed to fetch GitHub repository' });
+    }
+    
+    // Analyze the project
+    const projectData = await analyzeProject(projectDir);
+    
+    res.json({
+      message: 'GitHub repository processed successfully',
+      projectId: projectId,
+      projectData: projectData
+    });
+  } catch (error) {
+    console.error('Error processing GitHub URL:', error);
+    res.status(500).json({ error: 'Failed to process GitHub URL' });
+  }
+});
+
+// Function to download a directory from GitHub API
+async function downloadGitHubDirectory(owner, repo, branch, path, targetDir) {
+  try {
+    // Get the contents of the directory
+    const response = await axios.get(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`);
+    
+    // Process each item in the directory
+    for (const item of response.data) {
+      const itemPath = `${targetDir}/${item.name}`;
+      
+      if (item.type === 'dir') {
+        // Create directory and download its contents
+        await mkdir(itemPath, { recursive: true });
+        await downloadGitHubDirectory(owner, repo, branch, `${path}/${item.name}`, itemPath);
+      } else if (item.type === 'file') {
+        // Download the file
+        const fileResponse = await axios.get(item.download_url, { responseType: 'arraybuffer' });
+        await writeFile(itemPath, Buffer.from(fileResponse.data));
+      }
+    }
+  } catch (error) {
+    console.error('Error downloading from GitHub API:', error);
+    throw error;
+  }
+}
+
+// Generate CSS for GitHub repository
+app.post('/api/generate-github-css', async (req, res) => {
+  try {
+    const { projectId, prompt } = req.body;
+    
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    
+    const projectDir = path.join(githubDir, projectId);
+    
+    if (!fs.existsSync(projectDir)) {
+      return res.status(404).json({ error: 'GitHub project not found' });
+    }
+    
+    // Analyze the project
+    const projectData = await analyzeProject(projectDir);
+    
+    // Generate CSS with custom prompt if provided
+    let generatedCSS;
+    if (prompt) {
+      generatedCSS = await generateCSSWithPrompt(projectData, prompt);
+    } else {
+      generatedCSS = await generateCSS(projectData);
+    }
+    
+    // Apply CSS to the project
+    const enhancedDir = await applyGeneratedCSS(projectDir, generatedCSS);
+    
+    // Create a zip archive
+    const zipPath = path.join(projectDir, 'enhanced-project.zip');
+    await createZipArchive(enhancedDir, zipPath);
+    
+    res.json({
+      message: 'CSS generated successfully for GitHub project',
+      projectId: projectId,
+      css: generatedCSS,
+      downloadUrl: `/api/download-github/${projectId}`
+    });
+  } catch (error) {
+    console.error('Error generating CSS for GitHub project:', error);
+    res.status(500).json({ error: 'Failed to generate CSS' });
+  }
+});
+
+// Generate CSS with custom prompt
+async function generateCSSWithPrompt(projectData, customPrompt) {
+  // Prepare HTML samples (limit to avoid token limits)
+  const htmlSamples = projectData.htmlStructure
+    .map(item => `File: ${item.file}\n${item.structure}`)
+    .join('\n\n')
+    .slice(0, 3000);
+  
+  // Create prompt with project info and custom instructions
+  const prompt = `
+You are a CSS expert. I have a web project that needs styling.
+
+Project structure:
+HTML files: ${projectData.htmlFiles.join(', ')}
+CSS files: ${projectData.cssFiles.join(', ') || 'None'}
+JS files: ${projectData.jsFiles.join(', ') || 'None'}
+
+Classes used in the project: ${projectData.elements.classes.join(', ')}
+IDs used in the project: ${projectData.elements.ids.join(', ')}
+
+HTML structure samples:
+${htmlSamples}
+
+User's specific requirements:
+${customPrompt}
+
+Please generate a comprehensive CSS file that styles this project beautifully. Include:
+1. A modern, responsive design
+2. Clean typography with good readability
+3. Consistent spacing and layout
+4. Appealing color scheme
+5. Hover effects and transitions
+6. Mobile-first approach with media queries
+
+Return ONLY the CSS code without any explanations.
+`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { 
+          role: "system", 
+          content: "You are a CSS expert who creates beautiful, modern designs. Your task is to generate CSS for web projects based on their HTML structure."
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    });
+    
+    return completion.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error generating CSS with custom prompt:', error);
+    throw new Error('Failed to generate CSS with OpenAI');
+  }
+}
+
+// Download GitHub enhanced project endpoint
+app.get('/api/download-github/:projectId', (req, res) => {
+  const projectId = req.params.projectId;
+  const zipPath = path.join(githubDir, projectId, 'enhanced-project.zip');
+  
+  if (!fs.existsSync(zipPath)) {
+    return res.status(404).json({ error: 'Enhanced project not found' });
+  }
+  
+  res.download(zipPath, 'enhanced-project.zip');
+});
+
+// API endpoint for generating CSS directly from a prompt
+app.post('/api/generate', async (req, res) => {
+  try {
+    const { prompt, projectId } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    
+    let css;
+    
+    if (projectId) {
+      // If a projectId is provided, use it to analyze the project and generate CSS
+      const projectDir = path.join(uploadsDir, projectId);
+      
+      if (!fs.existsSync(projectDir)) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+      
+      const projectData = await analyzeProject(projectDir);
+      css = await generateCSSWithPrompt(projectData, prompt);
+    } else {
+      // Generate CSS directly from the prompt without a project
+      css = await generateCSSFromPrompt(prompt);
+    }
+    
+    res.json({
+      code: css,
+      language: 'css'
+    });
+  } catch (error) {
+    console.error('Error generating CSS:', error);
+    res.status(500).json({ error: 'Failed to generate CSS' });
+  }
+});
+
+// Generate CSS directly from a prompt without a project
+async function generateCSSFromPrompt(prompt) {
+  try {
+    const systemPrompt = "You are a CSS expert who creates beautiful, modern designs. Generate clean, well-formatted CSS based on the user's request.";
+    
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    });
+    
+    return completion.choices[0].message.content.trim();
+  } catch (error) {
+    console.error('Error generating CSS from prompt:', error);
+    throw new Error('Failed to generate CSS with OpenAI');
+  }
+}
 
 // Start the server
 const PORT = process.env.PORT || 5000;

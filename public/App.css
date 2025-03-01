@@ -1019,4 +1019,127 @@ body {
   .preview-container {
     padding: 8px;
   }
+}
+
+/* Add styles for GitHub URL input and mode toggle */
+
+.mode-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.mode-button {
+  padding: 10px 20px;
+  background-color: #333;
+  color: #ccc;
+  border: 1px solid #444;
+  border-radius: 4px;
+  margin: 0 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mode-button:hover {
+  background-color: #444;
+  color: #fff;
+}
+
+.mode-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #0069d9;
+}
+
+.github-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.github-url-input {
+  width: 100%;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background-color: #222;
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.github-url-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.github-url-input::placeholder {
+  color: #777;
+}
+
+.github-process-button {
+  padding: 12px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  align-self: flex-end;
+}
+
+.github-process-button:hover {
+  background-color: #218838;
+}
+
+.github-process-button:disabled {
+  background-color: #444;
+  color: #777;
+  cursor: not-allowed;
+}
+
+.history-github-url {
+  font-size: 14px;
+  color: #007bff;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+/* Adjust existing styles for better compatibility */
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  width: 100%;
+  transition: all 0.3s ease;
+}
+
+.content-layout.with-output .input-section {
+  width: 40%;
+  transition: all 0.3s ease;
+}
+
+.content-layout.with-output .output-section {
+  width: 58%;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 992px) {
+  .content-layout.with-output {
+    flex-direction: column;
+  }
+  
+  .content-layout.with-output .input-section,
+  .content-layout.with-output .output-section {
+    width: 100%;
+  }
 } 
