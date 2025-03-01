@@ -434,6 +434,116 @@ app.use('/preview/:projectId', (req, res, next) => {
   }
 });
 
+// Preview HTML template for testing CSS
+const previewHtmlTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CSS Preview</title>
+  <style>
+    /* Generated CSS will be inserted here */
+    {{CSS}}
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <header>
+      <h1>Preview Header</h1>
+      <nav>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Services</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <section class="hero">
+        <h2>Welcome to the Preview</h2>
+        <p>This is a preview of your generated CSS.</p>
+        <button class="cta-button">Call to Action</button>
+      </section>
+      <section class="features">
+        <div class="feature-card">
+          <h3>Feature 1</h3>
+          <p>Description of feature 1</p>
+        </div>
+        <div class="feature-card">
+          <h3>Feature 2</h3>
+          <p>Description of feature 2</p>
+        </div>
+        <div class="feature-card">
+          <h3>Feature 3</h3>
+          <p>Description of feature 3</p>
+        </div>
+      </section>
+    </main>
+    <footer>
+      <p>&copy; 2023 Preview Site</p>
+    </footer>
+  </div>
+</body>
+</html>
+`;
+
+// Preview endpoint for generated CSS
+app.get('/api/css-preview/:generationId', async (req, res) => {
+  try {
+    const { generationId } = req.params;
+    const outputPath = path.join(outputDir, generationId);
+    
+    // Check if the generation exists
+    if (!fs.existsSync(outputPath)) {
+      return res.status(404).json({ error: 'Generated project not found' });
+    }
+    
+    // Find the CSS file
+    const files = await readdir(outputPath);
+    const cssFile = files.find(file => file.endsWith('.css'));
+    
+    if (!cssFile) {
+      return res.status(404).json({ error: 'No CSS file found in the generated project' });
+    }
+    
+    // Read the CSS content
+    const cssContent = await readFile(path.join(outputPath, cssFile), 'utf8');
+    
+    // Create preview HTML with the CSS
+    const previewHtml = previewHtmlTemplate.replace('{{CSS}}', cssContent);
+    
+    // Set content type to HTML
+    res.setHeader('Content-Type', 'text/html');
+    res.send(previewHtml);
+  } catch (error) {
+    console.error('Error generating preview:', error);
+    res.status(500).json({ error: 'Failed to generate preview' });
+  }
+});
+
+// Direct preview endpoint that returns HTML with embedded CSS
+app.post('/api/preview-html', (req, res) => {
+  try {
+    const { css } = req.body;
+    
+    if (!css) {
+      return res.status(400).json({ error: 'CSS is required' });
+    }
+    
+    // Create preview HTML with the CSS
+    const previewHtml = previewHtmlTemplate.replace('{{CSS}}', css);
+    
+    // Set content type to HTML
+    res.setHeader('Content-Type', 'text/html');
+    res.send(previewHtml);
+  } catch (error) {
+    console.error('Error generating preview:', error);
+    res.status(500).json({ error: 'Failed to generate preview' });
+  }
+});
+
 // Serve index.html for the root route
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
