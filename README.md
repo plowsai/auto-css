@@ -73,11 +73,6 @@ npm run dev
 
 ISC
 
-
-# This project is not complete. Feel free to contribute.
-
-# Test Website for AutoCSS
-
 This repository contains a simple HTML website template that you can use to test the AutoCSS tool. The website includes common elements and structures that would benefit from responsive styling.
 
 ## Files Included
