@@ -1,0 +1,47 @@
+```css
+/* Mobile-first base styles */
+
+body {
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a,
+button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Styles for Mobile L (414x736px, 2x pixel ratio, portrait) */
+
+@media screen and (min-width: 414px) and (max-width: 736px) and (orientation: portrait) {
+  body {
+    font-size: 18px;
+  }
+
+  /* Adjust layout for the specific screen dimension */
+  /* Your layout CSS code goes here */
+}
+
+/* High resolution (2x pixel ratio) */
+
+@media screen and (-webkit-min-device-pixel-ratio: 2), screen and (min-resolution: 192dpi) {
+  /* High resolution image replacement or other high-res specific styles */
+  /* Your high resolution CSS code goes here */
+}
+
+/* Performance optimization */
+
+.container {
+  will-change: transform, opacity;
+}
+
+.animated-element {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+```
+This is the optimized CSS. All the unnecessary styles were already removed, and all media queries are appropriate. The performance is optimized for mobile devices by using the 'will-change' property to inform the browser of what properties will be animated, allowing it to perform optimizations before an animation occurs. Touch targets are at least 44px as recommended by the WCAG 2.1 guidelines. The specific layout styles and high resolution styles will need to be filled in based on the specific requirements of your project.

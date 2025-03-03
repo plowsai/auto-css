@@ -897,9 +897,296 @@ app.post('/api/process-project', upload.array('files'), async (req, res) => {
   }
 });
 
+// Enhanced OpenAI integration for mobile CSS generation
+async function generateMobileCSSWithOpenAI(projectData, deviceOptions) {
+  console.log(`Generating mobile CSS for ${deviceOptions.deviceName} (${deviceOptions.width}x${deviceOptions.height}) in ${deviceOptions.orientation} mode`);
+  
+  // Create a system message that defines the role
+  const systemMessage = {
+    role: "system",
+    content: `You are an expert mobile CSS developer specializing in responsive design and mobile-first approaches. 
+Your task is to generate CSS optimized specifically for mobile devices with the following expertise:
+1. Mobile-first design principles
+2. Touch-friendly UI elements (larger tap targets, appropriate spacing)
+3. Readable typography on small screens
+4. Efficient use of limited screen space
+5. Performance optimization for mobile devices
+6. Handling different orientations (portrait/landscape)
+7. Using modern CSS features like flexbox, grid, and CSS variables
+8. Ensuring accessibility on mobile devices`
+  };
+  
+  // Determine optimization level instructions
+  let optimizationInstructions = '';
+  switch (deviceOptions.optimizationLevel) {
+    case 'minimal':
+      optimizationInstructions = `Apply minimal changes to make the site mobile-friendly. Focus only on critical issues that affect usability on mobile devices. Preserve the original design as much as possible.`;
+      break;
+    case 'aggressive':
+      optimizationInstructions = `Apply aggressive optimization for maximum mobile-friendliness. Completely restructure layouts if necessary, prioritizing mobile usability over maintaining the original desktop design.`;
+      break;
+    default: // 'standard'
+      optimizationInstructions = `Apply standard mobile optimization techniques. Balance maintaining the original design with ensuring good mobile usability.`;
+  }
+  
+  // Add additional context if the site is already optimized
+  if (deviceOptions.isAlreadyOptimized) {
+    optimizationInstructions += `\n\nNOTE: This website appears to already have some mobile optimization. Focus on enhancing the existing responsive design rather than replacing it completely. Look for areas that could be further improved for the specific target device.`;
+    
+    if (deviceOptions.optimizationLevel === 'minimal') {
+      // For minimal optimization on already optimized sites, we'll return early with a message
+      // This is handled on the client side now, but we'll keep this as a fallback
+      return `/* 
+* This website already appears to be well-optimized for mobile devices.
+* 
+* We detected:
+* - Proper viewport meta tag
+* - Responsive design elements
+* - Mobile-friendly layout
+* 
+* No additional CSS modifications are necessary for basic mobile compatibility.
+* If you want to make specific enhancements, try the "Standard" or "Aggressive" 
+* optimization levels instead.
+*/`;
+    }
+  }
+  
+  // Create the base prompt
+  const basePrompt = `
+I need CSS optimized for mobile devices for the following project:
+
+Project structure:
+HTML files: ${projectData.htmlFiles.join(', ')}
+CSS files: ${projectData.cssFiles.join(', ') || 'None'}
+JS files: ${projectData.jsFiles.join(', ') || 'None'}
+
+Classes used in the project: ${projectData.elements.classes.join(', ')}
+IDs used in the project: ${projectData.elements.ids.join(', ')}
+
+Target device: ${deviceOptions.deviceName}
+Screen dimensions: ${deviceOptions.width}x${deviceOptions.height}
+Orientation: ${deviceOptions.orientation}
+Pixel ratio: ${deviceOptions.pixelRatio}
+
+${optimizationInstructions}
+
+Please generate CSS that:
+1. Is optimized specifically for the target device dimensions
+2. Uses a mobile-first approach
+3. Ensures touch targets are at least 44px × 44px
+4. Makes text readable without zooming (minimum 16px font size)
+5. Avoids horizontal scrolling
+6. Works well in ${deviceOptions.orientation} orientation
+7. Handles high pixel density displays properly
+8. Optimizes performance for mobile devices
+
+Return ONLY the CSS code without any explanations.
+`;
+
+  try {
+    // First pass - generate the base CSS
+    console.log("Making OpenAI API call for mobile CSS generation...");
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        systemMessage,
+        { role: "user", content: basePrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    });
+    
+    let generatedCSS = completion.choices[0].message.content.trim();
+    
+    // Second pass - optimize the generated CSS if requested
+    if (deviceOptions.performSecondPass) {
+      console.log("Performing second pass optimization...");
+      
+      const secondPassPrompt = `
+I have generated this CSS for a mobile device (${deviceOptions.deviceName}, ${deviceOptions.width}x${deviceOptions.height}, ${deviceOptions.orientation} orientation):
+
+${generatedCSS}
+
+Please optimize this CSS further to:
+1. Remove any redundant or unnecessary rules
+2. Improve performance by minimizing repaints and reflows
+3. Ensure it follows mobile best practices
+4. Fix any issues or inconsistencies
+5. Make it more efficient and maintainable
+
+Return ONLY the improved CSS without explanations.
+`;
+      
+      const secondPassCompletion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          systemMessage,
+          { role: "user", content: secondPassPrompt }
+        ],
+        temperature: 0.5,
+        max_tokens: 4000
+      });
+      
+      generatedCSS = secondPassCompletion.choices[0].message.content.trim();
+    }
+    
+    console.log("Mobile CSS generation complete");
+    return generatedCSS;
+    
+  } catch (error) {
+    console.error("Error generating mobile CSS with OpenAI:", error);
+    throw new Error(`Failed to generate mobile CSS: ${error.message}`);
+  }
+}
+
+// Add or update the API endpoint for generating mobile CSS
+app.post('/api/generate-mobile-css', async (req, res) => {
+  try {
+    const { 
+      projectId, 
+      deviceName, 
+      width, 
+      height, 
+      orientation, 
+      pixelRatio, 
+      performSecondPass, 
+      optimizationLevel,
+      isAlreadyOptimized 
+    } = req.body;
+    
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+    
+    // Validate device parameters
+    if (!width || !height || !orientation) {
+      return res.status(400).json({ error: 'Device parameters (width, height, orientation) are required' });
+    }
+    
+    const projectDir = path.join(outputDir, projectId);
+    
+    // Check if project directory exists
+    if (!fs.existsSync(projectDir)) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    
+    // Analyze the project
+    const projectData = await analyzeProject(projectDir);
+    
+    // Generate mobile CSS
+    const deviceOptions = {
+      deviceName: deviceName || 'Mobile Device',
+      width: parseInt(width),
+      height: parseInt(height),
+      orientation: orientation,
+      pixelRatio: pixelRatio || 2,
+      performSecondPass: performSecondPass !== false,
+      optimizationLevel: optimizationLevel || 'standard',
+      isAlreadyOptimized: isAlreadyOptimized || false
+    };
+    
+    const css = await generateMobileCSSWithOpenAI(projectData, deviceOptions);
+    
+    // Save the generated CSS
+    const cssFileName = `mobile-${deviceName.toLowerCase().replace(/\s+/g, '-')}.css`;
+    const cssPath = path.join(projectDir, cssFileName);
+    fs.writeFileSync(cssPath, css);
+    
+    // Update the enhanced directory preview if it exists
+    const previewDir = path.join(projectDir, 'preview');
+    if (fs.existsSync(previewDir)) {
+      const previewCssPath = path.join(previewDir, cssFileName);
+      fs.writeFileSync(previewCssPath, css);
+    }
+    
+    res.json({ css, path: cssPath });
+    
+  } catch (error) {
+    console.error('Error generating mobile CSS:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add API endpoint for generating mobile CSS from a URL
+app.post('/api/generate-mobile-css-for-url', async (req, res) => {
+  try {
+    const { 
+      url, 
+      deviceName, 
+      width, 
+      height, 
+      orientation, 
+      pixelRatio, 
+      performSecondPass, 
+      optimizationLevel,
+      isAlreadyOptimized 
+    } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+    
+    // Validate device parameters
+    if (!width || !height || !orientation) {
+      return res.status(400).json({ error: 'Device parameters (width, height, orientation) are required' });
+    }
+    
+    console.log(`Fetching HTML content from ${url}...`);
+    
+    // Fetch the HTML content
+    const response = await fetch(url);
+    const html = await response.text();
+    
+    // Extract classes and IDs from the HTML
+    const classesMatch = html.match(/class=["']([^"']+)["']/g) || [];
+    const idsMatch = html.match(/id=["']([^"']+)["']/g) || [];
+    
+    const classes = [...new Set(classesMatch.map(match => {
+      const classStr = match.match(/class=["']([^"']+)["']/)[1];
+      return classStr.split(/\s+/);
+    }).flat())];
+    
+    const ids = [...new Set(idsMatch.map(match => {
+      return match.match(/id=["']([^"']+)["']/)[1];
+    }))];
+    
+    // Create a simplified project data structure
+    const projectData = {
+      htmlFiles: [url],
+      cssFiles: [],
+      jsFiles: [],
+      elements: {
+        classes,
+        ids
+      },
+      htmlContent: html
+    };
+    
+    // Generate mobile CSS
+    const deviceOptions = {
+      deviceName: deviceName || 'Mobile Device',
+      width: parseInt(width),
+      height: parseInt(height),
+      orientation: orientation,
+      pixelRatio: pixelRatio || 2,
+      performSecondPass: performSecondPass !== false,
+      optimizationLevel: optimizationLevel || 'standard',
+      isAlreadyOptimized: isAlreadyOptimized || false
+    };
+    
+    const css = await generateMobileCSSWithOpenAI(projectData, deviceOptions);
+    
+    res.json({ css });
+    
+  } catch (error) {
+    console.error('Error generating mobile CSS from URL:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Open http://localhost:${PORT} in your browser`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Access the application at http://localhost:${PORT}`);
 });

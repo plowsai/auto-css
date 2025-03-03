@@ -1,306 +1,114 @@
 // AutoCSS App - Modern UI version
 console.log('AutoCSS App loaded');
 
-// Simple App component
+// Test app for AutoCSS Mobile CSS Generator
+// This app demonstrates the mobile CSS generation functionality
+
+// Main App component
 const App = () => {
-  const [prompt, setPrompt] = React.useState('');
-  const [generatedCode, setGeneratedCode] = React.useState('');
+  const [url, setUrl] = React.useState('https://example.com');
+  const [activeTab, setActiveTab] = React.useState('preview'); // 'preview' or 'generate'
   const [isLoading, setIsLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('generate'); // 'generate', 'history', 'preview'
-  const [history, setHistory] = React.useState([]);
-  const [selectedFile, setSelectedFile] = React.useState(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [previewUrl, setPreviewUrl] = React.useState('https://example.com');
+  const [error, setError] = React.useState(null);
+  const previewIframeRef = React.useRef(null);
+  const [isAlreadyOptimized, setIsAlreadyOptimized] = React.useState(false);
   
-  // Generate CSS code
-  const generateCode = () => {
-    if (!prompt.trim() && !selectedFile) return;
-    
+  // Handle URL input change
+  const handleUrlChange = (e) => {
+    setUrl(e.target.value);
+  };
+  
+  // Handle URL form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    // Simulate API call
-    setTimeout(() => {
-      const newCode = `/* Generated CSS for: ${prompt} */
-body {
-  background-color: #f0f0f0;
-  color: #333;
-  font-family: 'Inter', sans-serif;
-}
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-button {
-  background-color: #4361ee;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #3a56d4;
-}
-
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-}`;
+    try {
+      // Validate URL
+      let processedUrl = url.trim();
       
-      setGeneratedCode(newCode);
+      // Add https:// if no protocol is specified
+      if (!processedUrl.startsWith('http://') && !processedUrl.startsWith('https://')) {
+        processedUrl = 'https://' + processedUrl;
+        setUrl(processedUrl);
+      }
       
-      // Add to history
-      const newHistoryItem = {
-        id: Date.now(),
-        prompt: prompt,
-        code: newCode,
-        timestamp: new Date().toISOString()
-      };
+      // Reset the isAlreadyOptimized state when loading a new URL
+      setIsAlreadyOptimized(false);
       
-      setHistory(prev => [newHistoryItem, ...prev]);
+      // Set the URL and wait for the iframe to load
       setIsLoading(false);
-    }, 1500);
-  };
-  
-  // Handle file upload
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      // You could read the file here if needed
-      setPrompt(`Make responsive CSS for the uploaded file: ${file.name}`);
+    } catch (err) {
+      console.error('Error loading URL:', err);
+      setError('Failed to load the URL. Please check the URL and try again.');
+      setIsLoading(false);
     }
   };
   
-  // Handle folder upload
-  const handleFolderUpload = (event) => {
-    // In a real implementation, this would handle folder uploads
-    alert('Folder upload functionality would be implemented here');
+  // Handle tab switching
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
   };
   
-  // Handle drag events
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-  
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setSelectedFile(e.dataTransfer.files[0]);
-      setPrompt(`Make responsive CSS for the uploaded file: ${e.dataTransfer.files[0].name}`);
-    }
-  };
-  
-  // Copy to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(generatedCode);
-    alert('CSS copied to clipboard!');
-  };
-  
-  // Download CSS
-  const downloadCSS = () => {
-    const blob = new Blob([generatedCode], { type: 'text/css' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'autocss-generated.css';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-  
-  // Select history item
-  const selectHistoryItem = (item) => {
-    setGeneratedCode(item.code);
-    setPrompt(item.prompt);
-    setActiveTab('generate');
-  };
-  
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  // Update isAlreadyOptimized state
+  const updateOptimizationStatus = (status) => {
+    setIsAlreadyOptimized(status);
   };
   
   return React.createElement('div', { className: 'app-container' },
     // Header
     React.createElement('header', { className: 'app-header' },
-      React.createElement('h1', null, 'AutoCSS'),
-      React.createElement('p', null, 'Generate CSS code with AI')
+      React.createElement('h1', null, 'AutoCSS Mobile Preview'),
+      React.createElement('p', null, 'Generate mobile-responsive CSS with OpenAI')
     ),
+    
+    // URL Input Form
+    React.createElement('form', { className: 'url-form', onSubmit: handleSubmit },
+      React.createElement('input', {
+        type: 'text',
+        value: url,
+        onChange: handleUrlChange,
+        placeholder: 'Enter website URL (e.g., https://example.com)',
+        className: 'url-input'
+      }),
+      React.createElement('button', {
+        type: 'submit',
+        className: 'load-button',
+        disabled: isLoading
+      }, isLoading ? 'Loading...' : 'Load Website')
+    ),
+    
+    // Error message
+    error && React.createElement('div', { className: 'error-message' }, error),
     
     // Tabs
     React.createElement('div', { className: 'tabs' },
       React.createElement('button', {
-        className: `tab ${activeTab === 'generate' ? 'active' : ''}`,
-        onClick: () => setActiveTab('generate')
-      }, 'Generate'),
-      
+        className: `tab-button ${activeTab === 'preview' ? 'active' : ''}`,
+        onClick: () => handleTabChange('preview')
+      }, 'Preview'),
       React.createElement('button', {
-        className: `tab ${activeTab === 'history' ? 'active' : ''}`,
-        onClick: () => setActiveTab('history')
-      }, 'History'),
-      
-      React.createElement('button', {
-        className: `tab ${activeTab === 'preview' ? 'active' : ''}`,
-        onClick: () => setActiveTab('preview')
-      }, 'Preview')
+        className: `tab-button ${activeTab === 'generate' ? 'active' : ''}`,
+        onClick: () => handleTabChange('generate')
+      }, 'Generate Mobile CSS')
     ),
     
-    // Main content
-    React.createElement('main', { className: 'app-main' },
-      activeTab === 'generate' ? (
-        // Generate tab
-        React.createElement('div', { className: 'generate-container' },
-          React.createElement('div', { 
-            className: 'upload-container',
-            onDragOver: handleDragOver,
-            onDragLeave: handleDragLeave,
-            onDrop: handleDrop
-          },
-            React.createElement('div', { className: 'upload-content' },
-              React.createElement('textarea', {
-                className: 'prompt-input',
-                value: prompt,
-                onChange: (e) => setPrompt(e.target.value),
-                placeholder: 'Upload a project to Auto CSS',
-                rows: 1
-              }),
-              React.createElement('div', { className: 'upload-buttons' },
-                React.createElement('div', { className: 'left-buttons' },
-                  React.createElement('input', {
-                    type: 'file',
-                    id: 'file-upload',
-                    onChange: handleFileUpload,
-                    accept: '.html,.htm',
-                    style: { display: 'none' }
-                  }),
-                  React.createElement('label', { 
-                    htmlFor: 'file-upload',
-                    className: 'upload-button'
-                  }, 'Upload File'),
-                  React.createElement('button', {
-                    className: 'upload-button',
-                    onClick: handleFolderUpload
-                  }, 'Upload Folder')
-                ),
-                React.createElement('button', {
-                  className: 'generate-button',
-                  onClick: generateCode,
-                  disabled: isLoading
-                }, isLoading ? 'Generating...' : 'Generate')
-              )
-            )
-          ),
-          
-          // Output section (hidden until we have generated code)
-          generatedCode && React.createElement('div', { className: 'output-section' },
-            React.createElement('div', { className: 'output-header' },
-              React.createElement('h3', null, 'Generated CSS'),
-              React.createElement('div', { className: 'output-actions' },
-                React.createElement('button', {
-                  className: 'action-button copy-button',
-                  onClick: copyToClipboard
-                }, 'Copy'),
-                React.createElement('button', {
-                  className: 'action-button download-button',
-                  onClick: downloadCSS
-                }, 'Download')
-              )
-            ),
-            React.createElement('div', { className: 'code-container' },
-              React.createElement('pre', { className: 'code-block' }, generatedCode)
-            )
-          )
-        )
-      ) : activeTab === 'history' ? (
-        // History tab
-        React.createElement('section', { className: 'history-section' },
-          history.length > 0 ?
-            React.createElement('div', { className: 'history-list' },
-              history.map(item => 
-                React.createElement('div', { 
-                  key: item.id,
-                  className: 'history-item'
-                },
-                  React.createElement('div', { className: 'history-item-header' },
-                    React.createElement('p', { className: 'history-prompt' }, item.prompt),
-                    React.createElement('span', { className: 'history-date' }, formatDate(item.timestamp))
-                  ),
-                  React.createElement('div', { className: 'history-actions' },
-                    React.createElement('button', {
-                      className: 'history-button use-button',
-                      onClick: () => selectHistoryItem(item)
-                    }, 'Use This'),
-                    React.createElement('button', {
-                      className: 'history-button download-button',
-                      onClick: () => {
-                        setGeneratedCode(item.code);
-                        downloadCSS();
-                      }
-                    }, 'Download')
-                  )
-                )
-              )
-            ) :
-            React.createElement('div', { className: 'empty-history' },
-              React.createElement('p', null, 'No history yet'),
-              React.createElement('p', { className: 'empty-hint' }, 'Generate some CSS to see your history here')
-            )
-        )
-      ) : (
-        // Preview tab
-        React.createElement('section', { className: 'preview-section' },
-          React.createElement('div', { className: 'preview-url-container' },
-            React.createElement('input', {
-              type: 'text',
-              value: previewUrl,
-              onChange: (e) => setPreviewUrl(e.target.value),
-              placeholder: 'Enter URL to preview',
-              className: 'preview-url-input'
-            }),
-            React.createElement('button', {
-              className: 'preview-url-button',
-              onClick: () => {
-                // Force refresh by setting to empty and then back
-                const url = previewUrl;
-                setPreviewUrl('');
-                setTimeout(() => setPreviewUrl(url), 10);
-              }
-            }, 'Load')
-          ),
-          React.createElement('div', { className: 'preview-content' },
-            previewUrl ? React.createElement(ResponsivePreview, { url: previewUrl }) : null
-          )
-        )
-      )
+    // Tab content
+    React.createElement('div', { className: 'tab-content' },
+      // Preview Tab
+      activeTab === 'preview' && React.createElement(ResponsivePreview, {
+        url: url,
+        ref: (el) => { previewIframeRef.current = el?.iframeRef?.current; },
+        onOptimizationCheck: updateOptimizationStatus
+      }),
+      
+      // Generate Tab
+      activeTab === 'generate' && React.createElement(MobileCSSGenerator, {
+        url: url,
+        previewIframeRef: previewIframeRef,
+        isAlreadyOptimized: isAlreadyOptimized
+      })
     )
   );
 };
