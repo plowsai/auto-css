@@ -1151,4 +1151,49 @@ body {
   .content-layout.with-output .output-section {
     width: 100%;
   }
+}
+
+/* Preview section styles */
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.preview-url-container {
+  display: flex;
+  padding: 1rem;
+  background-color: #1e1e1e;
+  border-bottom: 1px solid #333;
+}
+
+.preview-url-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background-color: #333;
+  color: white;
+  margin-right: 0.5rem;
+  font-size: 14px;
+}
+
+.preview-url-button {
+  padding: 0.75rem 1.5rem;
+  background-color: #4361ee;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.preview-url-button:hover {
+  background-color: #3a56d4;
+}
+
+.preview-content {
+  flex: 1;
+  overflow: hidden;
 } 

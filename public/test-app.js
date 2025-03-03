@@ -6,10 +6,11 @@ const App = () => {
   const [prompt, setPrompt] = React.useState('');
   const [generatedCode, setGeneratedCode] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState('generate'); // 'generate', 'history'
+  const [activeTab, setActiveTab] = React.useState('generate'); // 'generate', 'history', 'preview'
   const [history, setHistory] = React.useState([]);
   const [selectedFile, setSelectedFile] = React.useState(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState('https://example.com');
   
   // Generate CSS code
   const generateCode = () => {
@@ -149,27 +150,33 @@ button:hover {
   };
   
   return React.createElement('div', { className: 'app-container' },
-    // Header with title
+    // Header
     React.createElement('header', { className: 'app-header' },
-      React.createElement('h1', { className: 'main-title' }, 'Responsive CSS in seconds.'),
-      React.createElement('p', { className: 'tagline' }, 'AutoCSS is your magical CSS generator.')
+      React.createElement('h1', null, 'AutoCSS'),
+      React.createElement('p', null, 'Generate CSS code with AI')
     ),
     
-    // Tab navigation
-    React.createElement('div', { className: 'tab-navigation' },
+    // Tabs
+    React.createElement('div', { className: 'tabs' },
       React.createElement('button', {
-        className: `tab-button ${activeTab === 'generate' ? 'active' : ''}`,
+        className: `tab ${activeTab === 'generate' ? 'active' : ''}`,
         onClick: () => setActiveTab('generate')
       }, 'Generate'),
+      
       React.createElement('button', {
-        className: `tab-button ${activeTab === 'history' ? 'active' : ''}`,
+        className: `tab ${activeTab === 'history' ? 'active' : ''}`,
         onClick: () => setActiveTab('history')
-      }, 'History')
+      }, 'History'),
+      
+      React.createElement('button', {
+        className: `tab ${activeTab === 'preview' ? 'active' : ''}`,
+        onClick: () => setActiveTab('preview')
+      }, 'Preview')
     ),
     
     // Main content
-    React.createElement('main', { className: 'main-content' },
-      activeTab === 'generate' ? 
+    React.createElement('main', { className: 'app-main' },
+      activeTab === 'generate' ? (
         // Generate tab
         React.createElement('div', { className: 'generate-container' },
           React.createElement('div', { 
@@ -232,10 +239,10 @@ button:hover {
               React.createElement('pre', { className: 'code-block' }, generatedCode)
             )
           )
-        ) :
-        
+        )
+      ) : activeTab === 'history' ? (
         // History tab
-        React.createElement('div', { className: 'history-container' },
+        React.createElement('section', { className: 'history-section' },
           history.length > 0 ?
             React.createElement('div', { className: 'history-list' },
               history.map(item => 
@@ -268,6 +275,32 @@ button:hover {
               React.createElement('p', { className: 'empty-hint' }, 'Generate some CSS to see your history here')
             )
         )
+      ) : (
+        // Preview tab
+        React.createElement('section', { className: 'preview-section' },
+          React.createElement('div', { className: 'preview-url-container' },
+            React.createElement('input', {
+              type: 'text',
+              value: previewUrl,
+              onChange: (e) => setPreviewUrl(e.target.value),
+              placeholder: 'Enter URL to preview',
+              className: 'preview-url-input'
+            }),
+            React.createElement('button', {
+              className: 'preview-url-button',
+              onClick: () => {
+                // Force refresh by setting to empty and then back
+                const url = previewUrl;
+                setPreviewUrl('');
+                setTimeout(() => setPreviewUrl(url), 10);
+              }
+            }, 'Load')
+          ),
+          React.createElement('div', { className: 'preview-content' },
+            previewUrl ? React.createElement(ResponsivePreview, { url: previewUrl }) : null
+          )
+        )
+      )
     )
   );
 };

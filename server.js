@@ -197,49 +197,45 @@ async function extractHTMLContent(filePath) {
 
 // Analyze project structure and extract relevant information
 async function analyzeProject(projectDir) {
-  const files = await getAllFiles(projectDir);
-  
-  const projectData = {
-    htmlFiles: [],
-    cssFiles: [],
-    jsFiles: [],
-    otherFiles: [],
-    elements: { classes: [], ids: [] },
-    htmlStructure: []
-  };
-  
-  for (const file of files) {
-    const ext = path.extname(file).toLowerCase();
-    const relativePath = path.relative(projectDir, file);
+  try {
+    // Get all files in the project directory
+    const files = await getAllFiles(projectDir);
     
-    switch (ext) {
-      case '.html':
-      case '.htm':
-        projectData.htmlFiles.push(relativePath);
-        const htmlContent = await extractHTMLContent(file);
-        projectData.elements.classes.push(...htmlContent.classes);
-        projectData.elements.ids.push(...htmlContent.ids);
-        projectData.htmlStructure.push({
-          file: relativePath,
-          structure: htmlContent.htmlStructure
-        });
-        break;
-      case '.css':
-        projectData.cssFiles.push(relativePath);
-        break;
-      case '.js':
-        projectData.jsFiles.push(relativePath);
-        break;
-      default:
-        projectData.otherFiles.push(relativePath);
+    // Filter files by type
+    const htmlFiles = files.filter(file => file.toLowerCase().endsWith('.html'))
+      .map(file => path.relative(projectDir, file));
+    
+    const cssFiles = files.filter(file => file.toLowerCase().endsWith('.css'))
+      .map(file => path.relative(projectDir, file));
+    
+    const jsFiles = files.filter(file => file.toLowerCase().endsWith('.js'))
+      .map(file => path.relative(projectDir, file));
+    
+    // Extract HTML content for analysis
+    const elements = { classes: [], ids: [] };
+    
+    for (const htmlFile of htmlFiles) {
+      const filePath = path.join(projectDir, htmlFile);
+      const { classes, ids } = await extractHTMLContent(filePath);
+      
+      elements.classes.push(...classes);
+      elements.ids.push(...ids);
     }
+    
+    // Remove duplicates
+    elements.classes = [...new Set(elements.classes)];
+    elements.ids = [...new Set(elements.ids)];
+    
+    return {
+      htmlFiles,
+      cssFiles,
+      jsFiles,
+      elements
+    };
+  } catch (error) {
+    console.error('Error analyzing project:', error);
+    throw error;
   }
-  
-  // Remove duplicates
-  projectData.elements.classes = [...new Set(projectData.elements.classes)];
-  projectData.elements.ids = [...new Set(projectData.elements.ids)];
-  
-  return projectData;
 }
 
 // Generate CSS using OpenAI
@@ -299,57 +295,64 @@ Return ONLY the CSS code without any explanations.
 
 // Apply generated CSS to the project
 async function applyGeneratedCSS(projectDir, generatedCSS) {
-  // Create enhanced directory for the processed project
-  const enhancedDir = path.join(projectDir, 'enhanced');
-  if (!fs.existsSync(enhancedDir)) {
-    await mkdir(enhancedDir, { recursive: true });
-  }
-  
-  // Copy all files to enhanced directory
-  const files = await getAllFiles(projectDir);
-  
-  for (const file of files) {
-    // Skip files in the enhanced directory
-    if (file.includes(path.sep + 'enhanced' + path.sep)) continue;
+  try {
+    // Create enhanced directory
+    const originalDir = path.join(projectDir, 'original');
+    const enhancedDir = path.join(projectDir, 'enhanced');
     
-    const relativePath = path.relative(projectDir, file);
-    const targetPath = path.join(enhancedDir, relativePath);
-    const targetDir = path.dirname(targetPath);
-    
-    if (!fs.existsSync(targetDir)) {
-      await mkdir(targetDir, { recursive: true });
+    // Create the enhanced directory if it doesn't exist
+    if (!fs.existsSync(enhancedDir)) {
+      await mkdir(enhancedDir, { recursive: true });
     }
     
-    // Copy file
-    fs.copyFileSync(file, targetPath);
+    // Copy all files from original to enhanced
+    const files = await getAllFiles(originalDir);
     
-    // For HTML files, add link to the generated CSS
-    if (path.extname(file).toLowerCase() === '.html') {
-      let content = await readFile(file, 'utf8');
+    for (const file of files) {
+      const relativePath = path.relative(originalDir, file);
+      const targetPath = path.join(enhancedDir, relativePath);
       
-      // Check if there's a head tag
-      if (content.includes('</head>')) {
-        // Add link to generated.css before closing head tag
-        content = content.replace('</head>', '  <link rel="stylesheet" href="generated.css">\n</head>');
-      } else if (content.includes('<html>') || content.includes('<html ')) {
-        // Add head with CSS link after html tag
-        content = content.replace(/(<html[^>]*>)/, '$1\n<head>\n  <link rel="stylesheet" href="generated.css">\n</head>');
-      } else {
-        // Add at the beginning of the file
-        content = `<!DOCTYPE html>\n<html>\n<head>\n  <link rel="stylesheet" href="generated.css">\n</head>\n${content}`;
+      // Create directory if it doesn't exist
+      const targetDir = path.dirname(targetPath);
+      if (!fs.existsSync(targetDir)) {
+        await mkdir(targetDir, { recursive: true });
       }
       
-      await writeFile(targetPath, content, 'utf8');
+      // Copy the file
+      fs.copyFileSync(file, targetPath);
     }
+    
+    // Create or update the CSS file in the enhanced directory
+    const cssFileName = 'autocss-generated.css';
+    const cssFilePath = path.join(enhancedDir, cssFileName);
+    await writeFile(cssFilePath, generatedCSS);
+    
+    // Find all HTML files in the enhanced directory
+    const htmlFiles = files.filter(file => file.endsWith('.html'));
+    
+    // Add the CSS link to each HTML file
+    for (const htmlFile of htmlFiles) {
+      const relativePath = path.relative(originalDir, htmlFile);
+      const enhancedHtmlPath = path.join(enhancedDir, relativePath);
+      
+      let htmlContent = await readFile(enhancedHtmlPath, 'utf8');
+      
+      // Check if the CSS is already linked
+      if (!htmlContent.includes(cssFileName)) {
+        // Add the CSS link before the closing head tag
+        htmlContent = htmlContent.replace('</head>', `  <link rel="stylesheet" href="/${cssFileName}">\n</head>`);
+        await writeFile(enhancedHtmlPath, htmlContent);
+      }
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error applying CSS:', error);
+    return { success: false, error: error.message };
   }
-  
-  // Write generated CSS to file
-  await writeFile(path.join(enhancedDir, 'generated.css'), generatedCSS, 'utf8');
-  
-  return enhancedDir;
 }
 
-// Generate CSS endpoint
+// Generate CSS for a project
 app.post('/api/generate-css', async (req, res) => {
   try {
     const { projectId } = req.body;
@@ -358,47 +361,53 @@ app.post('/api/generate-css', async (req, res) => {
       return res.status(400).json({ error: 'Project ID is required' });
     }
     
-    const projectDir = path.join(__dirname, 'uploads', projectId);
+    // Check if project exists
+    const projectDir = path.join(outputDir, projectId);
+    const originalDir = path.join(projectDir, 'original');
     
-    if (!fs.existsSync(projectDir)) {
+    if (!fs.existsSync(originalDir)) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
     // Analyze the project
-    const projectData = await analyzeProject(projectDir);
+    const projectData = await analyzeProject(originalDir);
     
     // Generate CSS
     const generatedCSS = await generateCSS(projectData);
     
     // Apply CSS to the project
-    const enhancedDir = await applyGeneratedCSS(projectDir, generatedCSS);
+    const result = await applyGeneratedCSS(projectDir, generatedCSS);
     
-    // Create a zip archive
-    const zipPath = path.join(projectDir, 'enhanced-project.zip');
-    await createZipArchive(enhancedDir, zipPath);
-    
-    res.json({
-      message: 'CSS generated successfully',
-      projectId: projectId,
-      css: generatedCSS,
-      downloadUrl: `/api/download/${projectId}`
-    });
+    if (result.success) {
+      // Create a zip archive
+      const zipPath = path.join(projectDir, 'enhanced-project.zip');
+      await createZipArchive(path.join(projectDir, 'enhanced'), zipPath);
+      
+      res.json({
+        message: 'CSS generated successfully',
+        projectId: projectId,
+        css: generatedCSS,
+        downloadUrl: `/api/download/${projectId}`
+      });
+    } else {
+      res.status(500).json({ error: result.error });
+    }
   } catch (error) {
     console.error('Error generating CSS:', error);
-    res.status(500).json({ error: 'Failed to generate CSS' });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// Download enhanced project endpoint
+// Download enhanced project
 app.get('/api/download/:projectId', (req, res) => {
-  const projectId = req.params.projectId;
-  const zipPath = path.join(__dirname, 'uploads', projectId, 'enhanced-project.zip');
+  const { projectId } = req.params;
+  const zipPath = path.join(outputDir, projectId, 'enhanced-project.zip');
   
-  if (!fs.existsSync(zipPath)) {
-    return res.status(404).json({ error: 'Enhanced project not found' });
+  if (fs.existsSync(zipPath)) {
+    res.download(zipPath);
+  } else {
+    res.status(404).send('Project not found');
   }
-  
-  res.download(zipPath, 'enhanced-project.zip');
 });
 
 // Get project preview endpoint
@@ -810,6 +819,83 @@ async function generateCSSFromPrompt(prompt) {
     throw new Error('Failed to generate CSS with OpenAI');
   }
 }
+
+// Serve static files from the output directory
+app.use('/preview', express.static(outputDir));
+
+// Add a specific route for original and enhanced previews
+app.get('/preview/:projectId/original/:file(*)', (req, res) => {
+  const { projectId, file } = req.params;
+  const filePath = path.join(outputDir, projectId, 'original', file);
+  
+  // Check if the file exists
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+app.get('/preview/:projectId/enhanced/:file(*)', (req, res) => {
+  const { projectId, file } = req.params;
+  const filePath = path.join(outputDir, projectId, 'enhanced', file);
+  
+  // Check if the file exists
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('File not found');
+  }
+});
+
+// Process uploaded project
+app.post('/api/process-project', upload.array('files'), async (req, res) => {
+  try {
+    // Generate a unique project ID
+    const projectId = Date.now().toString();
+    
+    // Create project directories
+    const projectDir = path.join(outputDir, projectId);
+    const originalDir = path.join(projectDir, 'original');
+    
+    if (!fs.existsSync(projectDir)) {
+      await mkdir(projectDir, { recursive: true });
+    }
+    
+    if (!fs.existsSync(originalDir)) {
+      await mkdir(originalDir, { recursive: true });
+    }
+    
+    // Move uploaded files to the original directory
+    for (const file of req.files) {
+      const targetPath = path.join(originalDir, file.originalname);
+      
+      // Create subdirectories if needed
+      const targetDir = path.dirname(targetPath);
+      if (!fs.existsSync(targetDir)) {
+        await mkdir(targetDir, { recursive: true });
+      }
+      
+      // Move the file
+      fs.renameSync(file.path, targetPath);
+    }
+    
+    // Analyze the project
+    const projectData = await analyzeProject(originalDir);
+    
+    res.json({
+      success: true,
+      projectId,
+      projectData
+    });
+  } catch (error) {
+    console.error('Error processing project:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Start the server
 const PORT = process.env.PORT || 5000;

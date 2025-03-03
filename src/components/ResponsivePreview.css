@@ -1,0 +1,181 @@
+.responsive-preview {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.responsive-controls {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.device-selector {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.device-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 8px;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.device-button:hover {
+  background-color: #e8e8e8;
+}
+
+.device-button.active {
+  background-color: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+}
+
+.device-icon {
+  font-size: 16px;
+  margin-bottom: 2px;
+}
+
+.device-name {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.custom-size-inputs {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.custom-size-inputs input {
+  width: 60px;
+  padding: 4px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.orientation-button {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.orientation-button:hover {
+  background-color: #e8e8e8;
+}
+
+.dimensions-display {
+  margin-left: auto;
+  font-size: 12px;
+  color: #666;
+  background-color: #e0e0e0;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.preview-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  background-color: #e0e0e0;
+  padding: 20px;
+  position: relative;
+}
+
+.iframe-wrapper {
+  transform-origin: top left;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+  transition: width 0.3s ease, height 0.3s ease;
+  position: relative;
+}
+
+.iframe-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ddd;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  z-index: 10;
+}
+
+.iframe-wrapper::after {
+  content: '⬤ ⬤ ⬤';
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 10px;
+  color: #999;
+  letter-spacing: 2px;
+  z-index: 11;
+}
+
+.iframe-wrapper iframe {
+  border: none;
+  background-color: white;
+  padding-top: 24px; /* Space for the browser chrome */
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .responsive-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .dimensions-display {
+    margin-left: 0;
+    margin-top: 5px;
+  }
+}
+
+/* Device frame styles */
+.iframe-wrapper.mobile {
+  border-radius: 20px;
+  border: 10px solid #333;
+}
+
+.iframe-wrapper.tablet {
+  border-radius: 15px;
+  border: 12px solid #333;
+}
+
+.iframe-wrapper.desktop {
+  border-radius: 5px;
+  border-top: 20px solid #333;
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
+  border-bottom: 1px solid #333;
+} 

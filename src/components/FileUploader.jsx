@@ -1,18 +1,24 @@
 import React, { useState } from 'react';
 import './FileUploader.css';
 
-function FileUploader({ onUploadComplete }) {
-  const [isUploading, setIsUploading] = useState(false);
+function FileUploader({ onUploadComplete, onUploadStart, onUploadError, isUploading: externalIsUploading }) {
+  const [isLocalUploading, setIsLocalUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState(null);
+  
+  // Use external isUploading state if provided, otherwise use local state
+  const isUploading = externalIsUploading !== undefined ? externalIsUploading : isLocalUploading;
 
   const handleFolderUpload = async (e) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    setIsUploading(true);
+    setIsLocalUploading(true);
     setError(null);
     setUploadProgress(0);
+    
+    // Notify parent component that upload has started
+    onUploadStart && onUploadStart();
 
     // Create a FormData object to send files
     const formData = new FormData();
@@ -26,7 +32,8 @@ function FileUploader({ onUploadComplete }) {
     }
 
     try {
-      const response = await fetch('/api/upload-folder', {
+      // Use the new API endpoint for processing projects
+      const response = await fetch('/api/process-project', {
         method: 'POST',
         body: formData,
         // For upload progress tracking
@@ -43,11 +50,18 @@ function FileUploader({ onUploadComplete }) {
       }
 
       const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Error processing project');
+      }
+      
       onUploadComplete && onUploadComplete(data);
     } catch (err) {
-      setError(err.message || 'Error uploading folder');
+      const errorMessage = err.message || 'Error uploading folder';
+      setError(errorMessage);
+      onUploadError && onUploadError(errorMessage);
     } finally {
-      setIsUploading(false);
+      setIsLocalUploading(false);
     }
   };
 

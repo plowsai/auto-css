@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import FileUploader from './FileUploader';
+import ResponsivePreview from './ResponsivePreview';
 import './ProjectProcessor.css';
 
 function ProjectProcessor() {
@@ -106,24 +107,18 @@ function ProjectProcessor() {
     );
   };
 
-  const loadPreview = () => {
-    if (!previewIframeRef.current || !projectId) return;
+  const getPreviewUrl = () => {
+    if (!projectId) return '';
     
-    const iframe = previewIframeRef.current;
-    
+    // Return the appropriate URL based on the active tab
     if (activeTab === 'original') {
-      // This is a simplified approach - in a real app, you would serve the original files
-      iframe.src = `/preview/${projectId}/index.html`;
+      return `/preview/${projectId}/original/index.html`;
     } else if (activeTab === 'enhanced') {
-      // Load the enhanced version
-      iframe.src = `/preview/${projectId}/index.html`;
+      return `/preview/${projectId}/enhanced/index.html`;
     }
+    
+    return '';
   };
-
-  // Load preview when tab changes or projectId is set
-  React.useEffect(() => {
-    loadPreview();
-  }, [activeTab, projectId]);
 
   return (
     <div className="project-processor">
@@ -203,13 +198,7 @@ function ProjectProcessor() {
                   <pre>{generatedCSS || 'No CSS generated yet'}</pre>
                 </div>
               ) : (
-                <div className="iframe-container">
-                  <iframe 
-                    ref={previewIframeRef}
-                    title="Project Preview"
-                    className="preview-iframe"
-                  />
-                </div>
+                <ResponsivePreview url={getPreviewUrl()} />
               )}
             </div>
           </div>
